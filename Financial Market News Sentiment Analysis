@@ -1,0 +1,76 @@
+import requests
+from bs4 import BeautifulSoup
+import pandas as pd
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+import matplotlib.pyplot as plt
+
+# Initialize VADER sentiment analyzer
+analyzer = SentimentIntensityAnalyzer()
+
+# Step 1: Web Scraping (Here we'll scrape a financial news page)
+def fetch_news_articles(url):
+    # Send request to the URL
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, 'html.parser')
+    
+    # Find all news headlines (example assumes articles are under <h2> tags)
+    headlines = soup.find_all('h2')  # Modify based on the specific site structure
+    articles = []
+    
+    for headline in headlines:
+        text = headline.get_text()
+        articles.append(text.strip())
+        
+    return articles
+
+# Example URL from a financial news website (can be replaced with others)
+url = "https://www.bbc.com/news/business"  # Replace with your target news site
+articles = fetch_news_articles(url)
+
+# Step 2: Sentiment Analysis using VADER
+def analyze_sentiment(articles):
+    sentiment_scores = []
+    for article in articles:
+        # Analyze sentiment of each article
+        sentiment = analyzer.polarity_scores(article)
+        sentiment_scores.append(sentiment['compound'])  # 'compound' is a general sentiment score
+
+    return sentiment_scores
+
+# Get sentiment scores for the scraped articles
+sentiment_scores = analyze_sentiment(articles)
+
+# Step 3: Data Processing
+data = pd.DataFrame({
+    'Article': articles,
+    'Sentiment Score': sentiment_scores
+})
+
+# Step 4: Visualization of Sentiment Analysis
+def plot_sentiment(data):
+    # Plot sentiment score distribution
+    plt.figure(figsize=(10, 6))
+    plt.hist(data['Sentiment Score'], bins=20, color='blue', edgecolor='black', alpha=0.7)
+    plt.title('Sentiment Score Distribution of Financial News Articles')
+    plt.xlabel('Sentiment Score')
+    plt.ylabel('Frequency')
+    plt.grid(True)
+    plt.show()
+
+# Visualize sentiment scores
+plot_sentiment(data)
+
+# Step 5: Summarize Sentiment Trends (Optional)
+def summarize_sentiment(data):
+    avg_sentiment = data['Sentiment Score'].mean()
+    positive_articles = len(data[data['Sentiment Score'] > 0])
+    negative_articles = len(data[data['Sentiment Score'] < 0])
+    neutral_articles = len(data[data['Sentiment Score'] == 0])
+
+    print(f"Average Sentiment Score: {avg_sentiment:.2f}")
+    print(f"Positive Articles: {positive_articles}")
+    print(f"Negative Articles: {negative_articles}")
+    print(f"Neutral Articles: {neutral_articles}")
+
+summarize_sentiment(data)
+
